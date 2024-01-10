@@ -10,11 +10,11 @@ It utilizes the Foundry framework for efficient and secure smart contract develo
 * Smart Contracts: Leveraging the power of smart contracts using the Foundry framework for automated and secure lottery operations.
 
 ## How it Works
-1. **Ticket Purchase**
-Users can participate in the lottery by purchasing tickets. Each ticket serves as an entry into the drawing, and users can buy as many tickets as they desire. The value of each ticket contributes to the total jackpot amount.
+1. **Raffle Purchase**
+Users can participate in the lottery by purchasing raffles. Each raffle serves as an entry into the drawing, and users can buy as many raffles as they desire. The value of each raffle contributes to the total jackpot amount.
 
 2. **Jackpot Accumulation**
-The total value of all purchased tickets accumulates to form the jackpot.
+The total value of all purchased raffles accumulates to form the jackpot.
 
 3. **Lottery Conclusion**
 Chainlink Automation is employed to automate the finalization of the lottery. This ensures a seamless and secure execution of the lottery conclusion process, distributing the accumulated jackpot to the winning participant.
