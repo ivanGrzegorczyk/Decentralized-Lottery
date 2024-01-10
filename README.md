@@ -20,7 +20,11 @@ The total value of all purchased raffles accumulates to form the jackpot.
 Chainlink Automation is employed to automate the finalization of the lottery. This ensures a seamless and secure execution of the lottery conclusion process, distributing the accumulated jackpot to the winning participant.
 
 4. **Random Winner Selection**
-To ensure a fair and random selection of the winner, the lottery system integrates Chainlink VRF (Verifiable Random Function). This decentralized oracle service provides a tamper-proof source of randomness, guaranteeing an unbiased selection process. 
+To ensure a fair and random selection of the winner, the lottery system integrates Chainlink VRF (Verifiable Random Function). This decentralized oracle service provides a tamper-proof source of randomness, guaranteeing an unbiased selection process.
+
+## Future ideas
+1. Make the entrance fee value tied to usd currency.
+2. Create simple UI with react to interact with the lottery.
 
 ## Disclaimer
 This project is developed for educational and portfolio purposes and is not intended for production use. It is based on the learnings from Patrick Collins' course on decentralized application development.
