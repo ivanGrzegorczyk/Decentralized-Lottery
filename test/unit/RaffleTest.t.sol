@@ -45,6 +45,8 @@ contract RaffleTest is Test {
         assert(raffle.getRaffleState() == Raffle.RaffleState.OPEN);
     }
 
+    /** Enter raffle tests */
+
     function test_RaffleRevertsWhenYouDontPayEnough() public {
         vm.expectRevert(Raffle.Raffle__NotEnoughEthSent.selector);
         raffle.enter();
@@ -73,5 +75,50 @@ contract RaffleTest is Test {
         vm.expectRevert(Raffle.Raffle__RaffleNotOpen.selector);
         vm.prank(PARTICIPANT);
         raffle.enter{value: entranceFee}();
+    }
+
+    /** Check up keep tests */
+
+    function test_CheckUpKeepReturnsFalseWhenLotteryDurationHasntPassed()
+        public
+    {
+        vm.prank(PARTICIPANT);
+        raffle.enter{value: entranceFee}();
+        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+        assert(!upkeepNeeded);
+    }
+
+    function test_CheckUpKeepReturnsFalseWhenNotOpen() public {
+        vm.prank(PARTICIPANT);
+        raffle.enter{value: entranceFee}();
+        vm.warp(block.timestamp + lotteryDuration + 1);
+        vm.roll(block.number + 1);
+        raffle.performUpkeep("");
+        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+        assert(!upkeepNeeded);
+    }
+
+    function test_CheckUpKeepReturnsFalseWhenNotEnoughEth() public {
+        vm.warp(block.timestamp + lotteryDuration + 1);
+        vm.roll(block.number + 1);
+        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+        assert(!upkeepNeeded);
+    }
+
+    function test_CheckUpKeepReturnsFalseWhenNoParticipants() public {
+        vm.warp(block.timestamp + lotteryDuration + 1);
+        vm.roll(block.number + 1);
+        vm.deal(address(raffle), 100 ether);
+        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+        assert(!upkeepNeeded);
+    }
+
+    function test_CheckUpKeepReturnsTrueWhenAllConditionsAreMet() public {
+        vm.prank(PARTICIPANT);
+        raffle.enter{value: entranceFee}();
+        vm.warp(block.timestamp + lotteryDuration + 1);
+        vm.roll(block.number + 1);
+        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+        assert(upkeepNeeded);
     }
 }
