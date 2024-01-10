@@ -6,6 +6,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {Raffle} from "../../src/Raffle.sol";
+import {Vm} from "forge-std/Vm.sol";
 
 contract RaffleTest is Test {
     address PARTICIPANT = makeAddr("participant");
@@ -25,6 +26,20 @@ contract RaffleTest is Test {
     /** Events */
     event EnteredRaffle(address indexed participant, uint256 amount);
     event PickedWinner(address indexed winner);
+    event RequestedRaffleWinner(uint256 indexed requestId);
+
+    /** Modifiers */
+    modifier raffleEntered() {
+        vm.prank(PARTICIPANT);
+        raffle.enter{value: entranceFee}();
+        _;
+    }
+
+    modifier timePassed() {
+        vm.warp(block.timestamp + lotteryDuration + 1);
+        vm.roll(block.number + 1);
+        _;
+    }
 
     function setUp() external {
         DeployRaffle deployer = new DeployRaffle();
@@ -52,9 +67,7 @@ contract RaffleTest is Test {
         raffle.enter();
     }
 
-    function test_RaffleRecordsParticipantsAccurately() public {
-        vm.prank(PARTICIPANT);
-        raffle.enter{value: entranceFee}();
+    function test_RaffleRecordsParticipantsAccurately() public raffleEntered {
         address participant = raffle.getParticipant(0);
         assert(participant == PARTICIPANT);
     }
@@ -66,11 +79,11 @@ contract RaffleTest is Test {
         raffle.enter{value: entranceFee}();
     }
 
-    function test_RaffleCantBeEnteredWhenCalculatingWinner() public {
-        vm.prank(PARTICIPANT);
-        raffle.enter{value: entranceFee}();
-        vm.warp(block.timestamp + lotteryDuration + 1);
-        vm.roll(block.number + 1);
+    function test_RaffleCantBeEnteredWhenCalculatingWinner()
+        public
+        raffleEntered
+        timePassed
+    {
         raffle.performUpkeep("");
         vm.expectRevert(Raffle.Raffle__RaffleNotOpen.selector);
         vm.prank(PARTICIPANT);
@@ -81,44 +94,81 @@ contract RaffleTest is Test {
 
     function test_CheckUpKeepReturnsFalseWhenLotteryDurationHasntPassed()
         public
+        raffleEntered
     {
-        vm.prank(PARTICIPANT);
-        raffle.enter{value: entranceFee}();
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
         assert(!upkeepNeeded);
     }
 
-    function test_CheckUpKeepReturnsFalseWhenNotOpen() public {
-        vm.prank(PARTICIPANT);
-        raffle.enter{value: entranceFee}();
-        vm.warp(block.timestamp + lotteryDuration + 1);
-        vm.roll(block.number + 1);
+    function test_CheckUpKeepReturnsFalseWhenNotOpen()
+        public
+        raffleEntered
+        timePassed
+    {
         raffle.performUpkeep("");
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
         assert(!upkeepNeeded);
     }
 
-    function test_CheckUpKeepReturnsFalseWhenNotEnoughEth() public {
-        vm.warp(block.timestamp + lotteryDuration + 1);
-        vm.roll(block.number + 1);
+    function test_CheckUpKeepReturnsFalseWhenNotEnoughEth() public timePassed {
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
         assert(!upkeepNeeded);
     }
 
-    function test_CheckUpKeepReturnsFalseWhenNoParticipants() public {
-        vm.warp(block.timestamp + lotteryDuration + 1);
-        vm.roll(block.number + 1);
+    function test_CheckUpKeepReturnsFalseWhenNoParticipants()
+        public
+        timePassed
+    {
         vm.deal(address(raffle), 100 ether);
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
         assert(!upkeepNeeded);
     }
 
-    function test_CheckUpKeepReturnsTrueWhenAllConditionsAreMet() public {
-        vm.prank(PARTICIPANT);
-        raffle.enter{value: entranceFee}();
-        vm.warp(block.timestamp + lotteryDuration + 1);
-        vm.roll(block.number + 1);
+    function test_CheckUpKeepReturnsTrueWhenAllConditionsAreMet()
+        public
+        raffleEntered
+        timePassed
+    {
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
         assert(upkeepNeeded);
+    }
+
+    /** Perform up keep tests */
+
+    function test_PerformUpKeepCanOnlyRunIfCheckUpKeepReturnsTrue()
+        public
+        raffleEntered
+        timePassed
+    {
+        raffle.performUpkeep("");
+    }
+
+    function test_PerformUpKeepRevertsIfCheckUpKeepReturnsFalse() public {
+        uint256 currentBalance = 0;
+        uint256 numParticipants = 0;
+        uint256 raffleState = 0;
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Raffle.Raffle__UpKeepNotNeeded.selector,
+                currentBalance,
+                numParticipants,
+                raffleState
+            )
+        );
+        raffle.performUpkeep("");
+    }
+
+    function test_PerformUpKeepUpdatesRaffleStateAndEmitsRequestId()
+        public
+        raffleEntered
+        timePassed
+    {
+        vm.recordLogs();
+        raffle.performUpkeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 requestId = entries[1].topics[1];
+        Raffle.RaffleState raffleState = raffle.getRaffleState();
+        assert(uint256(requestId) > 0);
+        assert(raffleState == Raffle.RaffleState.CALCULATING_WINNER);
     }
 }
