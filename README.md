@@ -16,15 +16,14 @@ Users can participate in the lottery by purchasing raffles. Each raffle serves a
 2. **Jackpot Accumulation**
 The total value of all purchased raffles accumulates to form the jackpot.
 
-3. **Lottery Conclusion**
+3. **Price Conversion**
+To ensure stability and tie the minimum entry price to the US dollar, the AggregatorV3Interface from Chainlink is utilized. This interface allows for the conversion of the minimum entry price (e.g., 5 USD) to its equivalent value in Ethereum (ETH). This integration ensures that the minimum entry price remains constant and is linked to the value of the US dollar.
+
+4. **Lottery Conclusion**
 Chainlink Automation is employed to automate the finalization of the lottery. This ensures a seamless and secure execution of the lottery conclusion process, distributing the accumulated jackpot to the winning participant.
 
-4. **Random Winner Selection**
+5. **Random Winner Selection**
 To ensure a fair and random selection of the winner, the lottery system integrates Chainlink VRF (Verifiable Random Function). This decentralized oracle service provides a tamper-proof source of randomness, guaranteeing an unbiased selection process.
-
-## Future ideas
-1. Make the entrance fee value tied to usd currency.
-2. Create simple UI with react to interact with the lottery.
 
 ## Disclaimer
 This project is developed for educational and portfolio purposes and is not intended for production use. It is based on the learnings from Patrick Collins' course on decentralized application development.

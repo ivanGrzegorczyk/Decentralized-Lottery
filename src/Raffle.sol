@@ -4,6 +4,8 @@ pragma solidity ^0.8.22;
 
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
+import {PriceConverter} from "./PriceConverter.sol";
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /**
  * @title Raffle contract
@@ -26,6 +28,7 @@ contract Raffle is VRFConsumerBaseV2 {
         OPEN,
         CALCULATING_WINNER
     }
+    using PriceConverter for uint256;
 
     /** Constants */
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
@@ -44,6 +47,7 @@ contract Raffle is VRFConsumerBaseV2 {
     uint256 private s_lastTimeStamp;
     address private s_lastWinner;
     RaffleState private s_raffleState;
+    AggregatorV3Interface private s_priceFeed;
 
     /** Events */
     event EnteredRaffle(address indexed participant, uint256 amount);
@@ -56,7 +60,8 @@ contract Raffle is VRFConsumerBaseV2 {
         address vrfCoordinator,
         bytes32 keyHash,
         uint64 subscriptionId,
-        uint32 callbackGasLimit
+        uint32 callbackGasLimit,
+        address priceFeed
     ) VRFConsumerBaseV2(vrfCoordinator) {
         i_entranceFee = entranceFee;
         i_lotteryDuration = lotteryDuration;
@@ -66,6 +71,7 @@ contract Raffle is VRFConsumerBaseV2 {
         i_callbackGasLimit = callbackGasLimit;
         s_lastTimeStamp = block.timestamp;
         s_raffleState = RaffleState.OPEN;
+        s_priceFeed = AggregatorV3Interface(priceFeed);
     }
 
     /** External functions */
@@ -74,7 +80,7 @@ contract Raffle is VRFConsumerBaseV2 {
         if (s_raffleState != RaffleState.OPEN) {
             revert Raffle__RaffleNotOpen();
         }
-        if (msg.value < i_entranceFee) {
+        if (msg.value.toUsd(s_priceFeed) < i_entranceFee) {
             revert Raffle__NotEnoughEthSent();
         }
         s_participants.push(payable(msg.sender));
@@ -128,8 +134,13 @@ contract Raffle is VRFConsumerBaseV2 {
         return (upkeepNeeded, "0x0");
     }
 
-    function getEntranceFee() external view returns (uint256) {
-        return i_entranceFee;
+    /**
+     * @dev This function can be used to get the entrance fee in ETH at any time.
+     * The returned value will change over time as the price feed updates.
+     * @return Returns the entrance fee in ETH and the amount of decimals
+     */
+    function getEntranceFee() external view returns (uint256, uint8) {
+        return (i_entranceFee.toEth(s_priceFeed), 18);
     }
 
     function getRaffleState() external view returns (RaffleState) {
@@ -150,6 +161,10 @@ contract Raffle is VRFConsumerBaseV2 {
 
     function getNumberOfParticipants() external view returns (uint256) {
         return s_participants.length;
+    }
+
+    function getVersion() external view returns (uint256) {
+        return s_priceFeed.version();
     }
 
     /** Internal functions */

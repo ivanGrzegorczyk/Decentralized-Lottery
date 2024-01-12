@@ -13,6 +13,7 @@ contract RaffleTest is Test {
     address PARTICIPANT = makeAddr("participant");
     uint256 public constant STARTING_USER_BALANCE = 10 ether;
     uint256 constant ANVIL_CHAIN_ID = 31337;
+    uint256 constant EXPECTED_PRICE_FEED_VERSION = 4;
 
     Raffle raffle;
     HelperConfig helperConfig;
@@ -20,10 +21,6 @@ contract RaffleTest is Test {
     uint256 entranceFee;
     uint256 lotteryDuration;
     address vrfCoordinator;
-    bytes32 keyHash;
-    uint64 subscriptionId;
-    uint32 callbackGasLimit;
-    address link;
 
     /** Events */
     event EnteredRaffle(address indexed participant, uint256 amount);
@@ -57,10 +54,11 @@ contract RaffleTest is Test {
             entranceFee,
             lotteryDuration,
             vrfCoordinator,
-            keyHash,
-            subscriptionId,
-            callbackGasLimit,
-            link,
+            ,
+            ,
+            ,
+            ,
+            ,
 
         ) = helperConfig.s_activeNetworkConfig();
         vm.deal(PARTICIPANT, STARTING_USER_BALANCE);
@@ -68,6 +66,10 @@ contract RaffleTest is Test {
 
     function test_RaffleInitializesInOpenState() public view {
         assert(raffle.getRaffleState() == Raffle.RaffleState.OPEN);
+    }
+
+    function test_PriceFeedVersionIsAccurate() public {
+        assertEq(raffle.getVersion(), EXPECTED_PRICE_FEED_VERSION);
     }
 
     /** Enter raffle tests */

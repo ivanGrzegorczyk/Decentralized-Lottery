@@ -18,7 +18,8 @@ contract DeployRaffle is Script {
             uint64 subscriptionId,
             uint32 callbackGasLimit,
             address link,
-            uint256 deployerKey
+            uint256 deployerKey,
+            address priceFeed
         ) = helperConfig.s_activeNetworkConfig();
 
         if (subscriptionId == 0) {
@@ -43,7 +44,8 @@ contract DeployRaffle is Script {
             vrfCoordinator,
             keyHash,
             subscriptionId,
-            callbackGasLimit
+            callbackGasLimit,
+            priceFeed
         );
         vm.stopBroadcast();
 
